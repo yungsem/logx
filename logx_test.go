@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewLog(t *testing.T) {
-	log := NewFileJsonLog("DEBUG", "log")
+	log := NewStdLog("DEBUG")
 
 	err := errors.New("test error")
 

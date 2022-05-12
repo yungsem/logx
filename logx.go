@@ -5,6 +5,9 @@ import (
 	"github.com/yungsem/logx/tool"
 	"github.com/yungsem/logx/writer"
 	"io"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
 // Logx 包装 zerolog ，适度封装
@@ -29,7 +32,8 @@ func (l *Logx) Warn(format string, v ...interface{}) {
 
 // Error 输出级别为 Error 的日志
 func (l *Logx) Error(err error) {
-	l.zeroLog.Error().Msg(err.Error())
+	cls := callers()
+	l.zeroLog.Error().Msg(err.Error() + "\n" + cls)
 }
 
 // NewStdLog 创建输出 text 格式的日志到标准输出的 Logx
@@ -71,4 +75,32 @@ func newLog(level string, writer io.Writer) *Logx {
 	return &Logx{
 		zeroLog: zeroLog,
 	}
+}
+
+// callers 获取 Logx.Error 的调用栈，并格式化成字符串
+func callers() string {
+	pc := make([]uintptr, 32)
+	n := runtime.Callers(3, pc)
+	if n == 0 {
+		return ""
+	}
+
+	pc = pc[:n]
+	frames := runtime.CallersFrames(pc)
+
+	var sb strings.Builder
+	for {
+		frame, more := frames.Next()
+
+		sb.WriteString("=====>>> ")
+		sb.WriteString(frame.File)
+		sb.WriteString(":")
+		sb.WriteString(strconv.Itoa(frame.Line))
+
+		if !more || frame.Function == "main.main"{
+			break
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
 }
