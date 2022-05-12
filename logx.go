@@ -2,9 +2,9 @@ package logx
 
 import (
 	"github.com/rs/zerolog"
+	"github.com/yungsem/logx/tool"
+	"github.com/yungsem/logx/writer"
 	"io"
-	"logx/tool"
-	"logx/writer"
 )
 
 // Logx 包装 zerolog ，适度封装

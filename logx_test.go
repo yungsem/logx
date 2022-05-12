@@ -1,7 +1,7 @@
 package logx
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 	"testing"
 )
 

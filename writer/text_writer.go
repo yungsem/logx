@@ -1,6 +1,6 @@
 package writer
 
-import "logx/tool"
+import "github.com/yungsem/logx/tool"
 
 // textWriter 将日志以普通文本的格式输出到文件中
 type textWriter struct {

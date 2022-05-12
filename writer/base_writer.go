@@ -3,8 +3,8 @@ package writer
 import (
 	"fmt"
 	"github.com/rs/zerolog"
+	"github.com/yungsem/logx/tool"
 	"io"
-	"logx/tool"
 	"os"
 	"strings"
 	"time"

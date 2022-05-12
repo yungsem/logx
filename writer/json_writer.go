@@ -2,8 +2,8 @@ package writer
 
 import (
 	"github.com/rs/zerolog"
+	"github.com/yungsem/logx/tool"
 	"io"
-	"logx/tool"
 )
 
 // jsonWriter 实现了 zerolog 中的 LevelWriter 接口
