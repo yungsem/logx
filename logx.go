@@ -1,80 +1,95 @@
 package logx
 
 import (
-	"github.com/rs/zerolog"
-	"github.com/yungsem/logx/tool"
-	"github.com/yungsem/logx/writer"
+	"fmt"
 	"io"
+	"log"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
+)
+
+const (
+	Warn = iota
+	Debug
+	Info
+	Error
+)
+
+const (
+	WarnStr  = "WARN"
+	DebugStr = "DEBUG"
+	InfoStr  = "INFO"
+	ErrorStr = "ERROR"
 )
 
 // Logx 包装 zerolog ，适度封装
 type Logx struct {
-	zeroLog zerolog.Logger
+	level int
+	out   io.Writer
 }
 
-// Debug 输出级别为 Debug 的日志
-func (l *Logx) Debug(format string, v ...interface{}) {
-	l.zeroLog.Debug().Msgf(format, v...)
+// NewStdoutLog 创建输出日志到标准输出的 Logx
+func NewStdoutLog(level string) *Logx {
+	return &Logx{
+		level: convertLevelStr(level),
+		out:   os.Stdout,
+	}
 }
 
-// Info 输出级别为 Info 的日志
-func (l *Logx) Info(format string, v ...interface{}) {
-	l.zeroLog.Info().Msgf(format, v...)
+// NewFileLog 创建输出日志到文件的 Logx
+func NewFileLog(level string, path string) *Logx {
+	return &Logx{
+		level: convertLevelStr(level),
+		out:   NewFileWriter(path),
+	}
+}
+
+// output 按一定格式输出日志
+func (l *Logx) output(level int, s string) {
+	if l.level > level {
+		return
+	}
+	var sb strings.Builder
+	timeStr := time.Now().Format("2006-01-02 15:04:05.99999")
+
+	levelStr := convertLevel(level)
+	levelStr = fmt.Sprintf("[%5s]", levelStr)
+
+	sb.WriteString(timeStr)
+	sb.WriteString(" ")
+	sb.WriteString(levelStr)
+	sb.WriteString(" ")
+	sb.WriteString(s)
+	sb.WriteString("\n")
+
+	_, err := l.out.Write([]byte(sb.String()))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // Warn 输出级别为 Warn 的日志
 func (l *Logx) Warn(format string, v ...interface{}) {
-	l.zeroLog.Warn().Msgf(format, v...)
+	l.output(Warn, fmt.Sprintf(format, v...))
+}
+
+// Debug 输出级别为 Debug 的日志
+func (l *Logx) Debug(format string, v ...interface{}) {
+	l.output(Debug, fmt.Sprintf(format, v...))
+}
+
+// Info 输出级别为 Info 的日志
+func (l *Logx) Info(format string, v ...interface{}) {
+	l.output(Info, fmt.Sprintf(format, v...))
 }
 
 // Error 输出级别为 Error 的日志
 func (l *Logx) Error(err error) {
 	cls := callers()
-	l.zeroLog.Error().Msg(err.Error() + "\n" + cls)
-}
-
-// NewStdLog 创建输出 text 格式的日志到标准输出的 Logx
-func NewStdLog(level string) *Logx {
-	return newLog(level, writer.NewStdWriter())
-}
-
-// NewFileLog 创建输出 text 格式的日志到文件的 Logx
-func NewFileLog(level string, path string) *Logx {
-	return newLog(level, writer.NewFileWriter(path))
-}
-
-// NewStdJsonLog 创建输出 json 格式的日志到标准输出的 Logx
-func NewStdJsonLog(level string) *Logx {
-	return newLog(level, writer.NewStdJsonWriter())
-}
-
-// NewFileJsonLog 创建输出 json 格式的日志到文件的 Logx
-func NewFileJsonLog(level string, path string) *Logx {
-	return newLog(level, writer.NewFileJsonWriter(path))
-}
-
-// newLog 创建 Lox
-func newLog(level string, writer io.Writer) *Logx {
-	// 创建 zeroLog
-	//zeroLog := zerolog.New(writer).With().CallerWithSkipFrameCount(3).Timestamp().Logger()
-	zeroLog := zerolog.New(writer).With().Timestamp().Logger()
-
-	// 设置日志的时间格式
-	zerolog.TimeFieldFormat = "2006-01-02 15:04:05.99999"
-
-	// 转换日志级别
-	zeroLevel := tool.ConvertLevel(level)
-
-	// 设置日志级别
-	zerolog.SetGlobalLevel(zeroLevel)
-
-	// 创建 Logx
-	return &Logx{
-		zeroLog: zeroLog,
-	}
+	l.output(Error, err.Error() + "\n" + cls)
 }
 
 // callers 获取 Logx.Error 的调用栈，并格式化成字符串
@@ -97,10 +112,40 @@ func callers() string {
 		sb.WriteString(":")
 		sb.WriteString(strconv.Itoa(frame.Line))
 
-		if !more || frame.Function == "main.main"{
+		if !more || frame.Function == "main.main" {
 			break
 		}
 		sb.WriteString("\n")
 	}
 	return sb.String()
+}
+
+// convertLevelStr 将字符串类型的 level 转换为 int 类型的 level
+func convertLevelStr(level string) int {
+	switch level {
+	case ErrorStr:
+		return Error
+	case InfoStr:
+		return Info
+	case DebugStr:
+		return Debug
+	case WarnStr:
+		return Warn
+	}
+	return -1
+}
+
+// convertLevel 将 int 类型的 level 转换为字符串类型的 level
+func convertLevel(level int) string {
+	switch level {
+	case Error:
+		return ErrorStr
+	case Info:
+		return InfoStr
+	case Debug:
+		return DebugStr
+	case Warn:
+		return WarnStr
+	}
+	return ""
 }

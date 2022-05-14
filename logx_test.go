@@ -6,12 +6,12 @@ import (
 )
 
 func TestNewLog(t *testing.T) {
-	log := NewStdLog("DEBUG")
+	log  := NewStdoutLog("ERROR")
+
+	log.Warn("test %s error", "warn")
+	log.Debug("test %s error", "debug")
+	log.Info("test %s error", "info")
 
 	err := errors.New("test error")
-
-	log.Debug("test debug")
-	log.Warn("test warn")
-	log.Info("test info")
 	log.Error(err)
 }
